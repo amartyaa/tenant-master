@@ -1,0 +1,157 @@
+---
+# ServiceAccount for BFF in k8s mode
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenant-master-bff
+  namespace: tenant-master-system
+  labels:
+    app: tenant-master
+    component: bff
+
+---
+# ClusterRole for BFF - read/write Tenants
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-master-bff
+  labels:
+    app: tenant-master
+    component: bff
+rules:
+  # Tenant CRD operations
+  - apiGroups: ["platform.io"]
+    resources: ["tenants"]
+    verbs: ["get", "list", "create", "update", "patch", "delete", "watch"]
+  # Status subresource (if used)
+  - apiGroups: ["platform.io"]
+    resources: ["tenants/status"]
+    verbs: ["get", "update", "patch"]
+  # Secrets (for kubeconfig export)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  # Namespaces (for tenant namespace info)
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+
+---
+# ClusterRoleBinding for BFF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tenant-master-bff
+  labels:
+    app: tenant-master
+    component: bff
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tenant-master-bff
+subjects:
+  - kind: ServiceAccount
+    name: tenant-master-bff
+    namespace: tenant-master-system
+
+---
+# BFF Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-master-bff
+  namespace: tenant-master-system
+  labels:
+    app: tenant-master
+    component: bff
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tenant-master
+      component: bff
+  template:
+    metadata:
+      labels:
+        app: tenant-master
+        component: bff
+    spec:
+      serviceAccountName: tenant-master-bff
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+      containers:
+      - name: bff
+        image: amartyaa/tenant-master-bff:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        env:
+        - name: BFF_MODE
+          value: "k8s"
+        - name: BFF_PORT
+          value: "8080"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: bff-jwt-secret
+              key: secret
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+
+---
+# BFF Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-master-bff
+  namespace: tenant-master-system
+  labels:
+    app: tenant-master
+    component: bff
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: http
+    protocol: TCP
+    name: http
+  selector:
+    app: tenant-master
+    component: bff
+
+---
+# JWT Secret for BFF (generate with: openssl rand -base64 32)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: bff-jwt-secret
+  namespace: tenant-master-system
+type: Opaque
+stringData:
+  secret: "change-me-to-secure-random-value"

@@ -2,3 +2,5 @@
 !README.md
 !QUICKSTART.md
 !INDEX.md
+node_modules/
+dist/
