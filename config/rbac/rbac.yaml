@@ -1,0 +1,182 @@
+---
+# Namespace for the operator
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+---
+# ServiceAccount for the operator
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tenant-master
+  namespace: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+---
+# ClusterRole for the operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tenant-master
+  labels:
+    app.kubernetes.io/name: tenant-master
+rules:
+# Tenant CRD permissions
+- apiGroups:
+  - platform.io
+  resources:
+  - tenants
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - platform.io
+  resources:
+  - tenants/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - platform.io
+  resources:
+  - tenants/finalizers
+  verbs:
+  - update
+# Namespace management
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# ServiceAccount management
+- apiGroups:
+  - ""
+  resources:
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# Secret management
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# RBAC management
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - rolebindings
+  - roles
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# NetworkPolicy management
+- apiGroups:
+  - networking.k8s.io
+  resources:
+  - networkpolicies
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# ResourceQuota management
+- apiGroups:
+  - ""
+  resources:
+  - resourcequotas
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# Event creation for logging
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+# Deployment and Pod management (for vCluster, etc.)
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+# ConfigMap management
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+---
+# ClusterRoleBinding for the operator
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tenant-master
+  labels:
+    app.kubernetes.io/name: tenant-master
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tenant-master
+subjects:
+- kind: ServiceAccount
+  name: tenant-master
+  namespace: tenant-system

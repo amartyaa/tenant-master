@@ -1,0 +1,80 @@
+---
+# Webhook Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+spec:
+  ports:
+  - port: 443
+    targetPort: 9443
+    protocol: TCP
+    name: webhook
+  selector:
+    app.kubernetes.io/name: tenant-master
+    app.kubernetes.io/component: controller-manager
+---
+# MutatingWebhookConfiguration for Tenant
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: tenant-mutating-webhook
+  labels:
+    app.kubernetes.io/name: tenant-master
+webhooks:
+- name: mtenant.platform.io
+  admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: tenant-system
+      path: /mutate-platform-io-v1alpha1-tenant
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  failurePolicy: Fail
+  sideEffects: None
+  timeoutSeconds: 5
+  rules:
+  - operations:
+    - CREATE
+    - UPDATE
+    apiGroups:
+    - platform.io
+    apiVersions:
+    - v1alpha1
+    resources:
+    - tenants
+---
+# ValidatingWebhookConfiguration for Tenant
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: tenant-validating-webhook
+  labels:
+    app.kubernetes.io/name: tenant-master
+webhooks:
+- name: vtenant.platform.io
+  admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: tenant-system
+      path: /validate-platform-io-v1alpha1-tenant
+    caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  failurePolicy: Fail
+  sideEffects: None
+  timeoutSeconds: 5
+  rules:
+  - operations:
+    - CREATE
+    - UPDATE
+    apiGroups:
+    - platform.io
+    apiVersions:
+    - v1alpha1
+    resources:
+    - tenants

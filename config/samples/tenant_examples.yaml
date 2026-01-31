@@ -1,0 +1,53 @@
+---
+# Example: Bronze Tier (Minimal Isolation)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: startups-free-trial
+spec:
+  tier: Bronze
+  owner: support@startup.com
+  # Bronze tier uses shared resources, minimal isolation
+  resources:
+    cpu: "100m"
+    memory: "256Mi"
+  network:
+    allowInternetAccess: true
+---
+# Example: Silver Tier (Namespace Isolation)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: acme-corp
+spec:
+  tier: Silver
+  owner: admin@acme.com
+  resources:
+    cpu: "4000m"
+    memory: "8Gi"
+    storageClass: "fast-ssd"
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+    - "shared-services/auth-api"
+    - "shared-services/logging"
+    - "monitoring/prometheus"
+---
+# Example: Gold Tier (vCluster Isolation)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: bigbank-enterprise
+spec:
+  tier: Gold
+  owner: platform-admin@bigbank.com
+  resources:
+    cpu: "16000m"
+    memory: "32Gi"
+    storageClass: "premium-ssd"
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+    - "shared-services/auth-api"
+    - "monitoring/prometheus"
+    - "shared-services/audit-logging"

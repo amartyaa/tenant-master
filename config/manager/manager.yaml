@@ -1,0 +1,119 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tenant-master
+  namespace: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+    app.kubernetes.io/component: controller-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenant-master
+      app.kubernetes.io/component: controller-manager
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: tenant-master
+        app.kubernetes.io/component: controller-manager
+    spec:
+      serviceAccountName: tenant-master
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        fsGroup: 65532
+      containers:
+      - name: manager
+        image: tenant-master:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - /manager
+        args:
+        - --metrics-bind-address=:8080
+        - --leader-elect
+        - --webhook-port=9443
+        - --cert-dir=/tmp/k8s-webhook-server/serving-certs
+        env:
+        - name: ENABLE_WEBHOOKS
+          value: "true"
+        ports:
+        - containerPort: 9443
+          name: webhook
+          protocol: TCP
+        - containerPort: 8080
+          name: metrics
+          protocol: TCP
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - name: webhook-certs
+          mountPath: /tmp/k8s-webhook-server/serving-certs
+          readOnly: true
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: webhook-server-cert
+          optional: true
+      terminationGracePeriodSeconds: 10
+---
+# Service for metrics
+apiVersion: v1
+kind: Service
+metadata:
+  name: tenant-master-metrics
+  namespace: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: metrics
+  selector:
+    app.kubernetes.io/name: tenant-master
+    app.kubernetes.io/component: controller-manager
+---
+# ServiceMonitor for Prometheus (optional)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: tenant-master
+  namespace: tenant-system
+  labels:
+    app.kubernetes.io/name: tenant-master
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: tenant-master
+  endpoints:
+  - port: metrics
+    interval: 30s

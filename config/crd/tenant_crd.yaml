@@ -1,0 +1,150 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tenants.platform.io
+  labels:
+    app.kubernetes.io/name: tenant-master
+    app.kubernetes.io/component: crd
+spec:
+  group: platform.io
+  names:
+    kind: Tenant
+    listKind: TenantList
+    plural: tenants
+    shortNames:
+    - ten
+    singular: tenant
+  scope: Cluster
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        description: Tenant is the Schema for the tenants API.
+        type: object
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object.'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents.'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: TenantSpec defines the desired state of a Tenant.
+            type: object
+            required:
+            - tier
+            - owner
+            properties:
+              tier:
+                description: Tier defines the isolation level for this tenant.
+                type: string
+                enum:
+                - Bronze
+                - Silver
+                - Gold
+              owner:
+                description: Owner is the email/identifier of the tenant owner for
+                  notifications.
+                type: string
+                minLength: 1
+              allowTierMigration:
+                description: AllowTierMigration is a flag to allow unsafe downgrades
+                  (e.g., Gold -> Bronze).
+                type: boolean
+              suspend:
+                description: Suspend can be set to true to scale the tenant to zero
+                  replicas (cost savings).
+                type: boolean
+              resources:
+                description: Resources defines CPU, memory, and storage constraints.
+                type: object
+                properties:
+                  cpu:
+                    description: CPU request/limit in millicores (e.g., "4000m").
+                    type: string
+                    pattern: ^(\d+m|\d+\.?\d*|\d*\.?\d+)$
+                  memory:
+                    description: Memory request/limit (e.g., "8Gi", "1024Mi").
+                    type: string
+                    pattern: ^(\d+Mi|\d+Gi|\d+Ti)$
+                  storageClass:
+                    description: StorageClass name for PersistentVolumeClaims.
+                    type: string
+              network:
+                description: Network defines network policies and egress rules for
+                  a tenant.
+                type: object
+                properties:
+                  allowInternetAccess:
+                    description: AllowInternetAccess determines if the tenant can reach external IPs.
+                    type: boolean
+                  whitelistedServices:
+                    description: WhitelistedServices is a list of allowed egress destinations.
+                    type: array
+                    items:
+                      type: string
+          status:
+            description: TenantStatus defines the observed state of a Tenant.
+            type: object
+            properties:
+              state:
+                description: State represents the current provisioning state of the tenant.
+                type: string
+                enum:
+                - Provisioning
+                - Ready
+                - Failed
+                - Suspended
+                - Terminating
+              namespace:
+                description: Namespace is the name of the Kubernetes namespace allocated
+                  to this tenant.
+                type: string
+              apiEndpoint:
+                description: APIEndpoint is the connection address for Gold tier vClusters.
+                type: string
+              adminKubeconfigSecret:
+                description: AdminKubeconfigSecret is the name of the Secret containing
+                  the kubeconfig for Gold tier.
+                type: string
+              provisioningStartTime:
+                description: ProvisioningStartTime records when provisioning began.
+                type: string
+                format: date-time
+              lastUpdateTime:
+                description: LastUpdateTime records the last successful reconciliation.
+                type: string
+                format: date-time
+              lastError:
+                description: LastError records the last error encountered during reconciliation.
+                type: string
+              observedGeneration:
+                description: ObservedGeneration reflects the generation of the Spec
+                  that was last reconciled.
+                type: integer
+                format: int64
+    subresources:
+      status: {}
+    additionalPrinterColumns:
+    - name: Tier
+      type: string
+      jsonPath: .spec.tier
+    - name: State
+      type: string
+      jsonPath: .status.state
+    - name: Namespace
+      type: string
+      jsonPath: .status.namespace
+    - name: Owner
+      type: string
+      jsonPath: .spec.owner
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
