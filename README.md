@@ -320,48 +320,11 @@ Tenants **cannot**:
 - Modify cluster-wide resources
 - Escalate privileges
 
-### Drift Correction (Future)
+### Drift Correction
 
 Tenant-Master watches NetworkPolicies. If a user manually modifies a policy, the operator reverts it to the desired state within 30 seconds. This prevents accidental security misconfigurations.
 
-## KPIs & Success Metrics
 
-Based on the PRD:
-
-✅ **Provisioning Time**
-- Silver Tier: < 5 seconds
-- Gold Tier: < 45 seconds
-
-✅ **Isolation Integrity**
-- 100% success rate on "Red Team" tests (cross-tenant curl attempts must fail)
-
-✅ **Error Recovery**
-- Automatic reconciliation on controller restart
-- Exponential backoff on transient failures
-
-## Roadmap
-
-### Phase 1: Silver MVP ✅ (Implemented)
-- ✅ Scaffold Kubebuilder project
-- ✅ Implement Tenant CRD
-- ✅ Core reconciliation logic (namespace, ResourceQuota, NetworkPolicy, RBAC)
-- ✅ Unit tests (80%+ coverage)
-
-### Phase 2: Gold Standard 🔄 (In Progress)
-- 🔄 Helm SDK integration (stub implemented, production integration pending)
-- 🔄 vCluster deployment (stub implemented)
-- ✅ Kubeconfig extraction (stub implemented)
-
-### Phase 3: Day 2 Operations 📅 (Future)
-- 📅 Sleep mode (scale-to-zero for inactive tenants)
-- 📅 Wake-on-request proxy
-- 📅 Cost analytics dashboard
-
-### Phase 4: Enterprise Features 📅 (Future)
-- 📅 Multi-cluster management
-- 📅 Tenant migration workflows
-- 📅 Backup & restore capabilities
-- 📅 Advanced RBAC (group-based access)
 
 ## Development
 
