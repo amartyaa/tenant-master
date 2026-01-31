@@ -147,6 +147,11 @@ func (r *TenantReconciler) reconcileSilverTier(ctx context.Context, tenant *plat
 		return fmt.Errorf("namespace creation failed: %w", err)
 	}
 
+	// Propagate secrets and ConfigMaps (E1-05)
+	if err := r.ensureSecretsAndConfigMaps(ctx, tenant, log); err != nil {
+		return fmt.Errorf("secret/ConfigMap propagation failed: %w", err)
+	}
+
 	// Create ResourceQuota
 	if err := r.ensureResourceQuota(ctx, tenant, log); err != nil {
 		return fmt.Errorf("resource quota creation failed: %w", err)
@@ -160,6 +165,12 @@ func (r *TenantReconciler) reconcileSilverTier(ctx context.Context, tenant *plat
 	// Create default-deny NetworkPolicy
 	if err := r.ensureNetworkPolicy(ctx, tenant, log); err != nil {
 		return fmt.Errorf("network policy creation failed: %w", err)
+	}
+
+	// Detect and correct NetworkPolicy drift (E1-06)
+	if err := r.detectAndCorrectNetworkPolicyDrift(ctx, tenant, log); err != nil {
+		log.Error(err, "drift detection failed (non-fatal)")
+		// Non-fatal: continue with reconciliation
 	}
 
 	tenant.Status.State = platformv1alpha1.StateReady
@@ -193,6 +204,11 @@ func (r *TenantReconciler) handleDeletion(ctx context.Context, tenant *platformv
 		tenant.Status.State = platformv1alpha1.StateTerminating
 		if err := r.Status().Update(ctx, tenant); err != nil {
 			log.Error(err, "failed to update status to Terminating")
+		}
+
+		// Take snapshot before deletion (E3-04)
+		if err := r.takeSnapshotBeforeDeletion(ctx, tenant, log); err != nil {
+			log.Error(err, "snapshot creation failed (non-fatal), proceeding with deletion")
 		}
 
 		// Execute cleanup logic (namespace deletion is handled by OwnerReferences)
