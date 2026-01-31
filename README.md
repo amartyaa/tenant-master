@@ -1,6 +1,6 @@
 # Tenant-Master: Cloud-Native Kubernetes Operator
 
-Tenant-Master is a production-grade Kubernetes Operator designed to automate **Hard Multi-Tenancy** for B2B SaaS applications. It replaces manual namespace creation, fragile application-level logic, and custom scripting with strict, infrastructure-level isolation boundaries managed via Custom Resource Definitions (CRDs).
+Tenant-Master is a Kubernetes Operator designed to automate **Hard Multi-Tenancy** for B2B SaaS applications. It replaces manual namespace creation, fragile application-level logic, and custom scripting with strict, infrastructure-level isolation boundaries managed via Custom Resource Definitions (CRDs).
 
 ## Overview
 

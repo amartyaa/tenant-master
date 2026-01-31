@@ -1,0 +1,44 @@
+---
+# Bronze Tier Example: Soft Isolation
+# Use Case: Development teams, testing environments, low-criticality workloads
+# Features:
+# - Shared namespace with best-effort isolation via RBAC
+# - No NetworkPolicy enforcement (soft boundaries only)
+# - Minimal resource requests: 1CPU, 2GB memory
+# - Lower cost, suitable for non-production or short-lived workloads
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: dev-team-bronze
+  namespace: default
+spec:
+  tier: Bronze
+  owner: dev-lead@acme.corp
+  resources:
+    cpu: 1000m          # 1 CPU core
+    memory: 2Gi         # 2GB RAM
+    storageClass: standard
+  network:
+    allowInternetAccess: true      # Bronze tier allows outbound internet
+    whitelistedServices: []        # No restrictions in soft isolation
+  allowTierMigration: true         # Can be downgraded if needed
+  suspend: false
+
+---
+# Bronze Tier Example #2: Seasonal/Temporary Workload
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: temporary-project-bronze
+  namespace: default
+spec:
+  tier: Bronze
+  owner: project-manager@acme.corp
+  resources:
+    cpu: 2000m          # 2 CPU cores
+    memory: 4Gi         # 4GB RAM
+    storageClass: standard
+  network:
+    allowInternetAccess: true
+    whitelistedServices: []
+  suspend: false

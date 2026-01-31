@@ -1,0 +1,121 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tenants.platform.io
+  labels:
+    {{- include "tenant-operator.labels" . | nindent 4 }}
+spec:
+  names:
+    kind: Tenant
+    plural: tenants
+    shortNames:
+    - ten
+  scope: Cluster
+  group: platform.io
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: Tenant defines a hard-isolated tenant in a multi-tenant Kubernetes cluster
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            description: TenantSpec defines the desired state of a Tenant
+            properties:
+              tier:
+                type: string
+                enum: ["Bronze", "Silver", "Gold"]
+                description: "Isolation tier: Bronze (soft), Silver (namespace-isolated), Gold (vCluster)"
+              owner:
+                type: string
+                description: "Owner email for notifications and RBAC"
+              resources:
+                type: object
+                description: "Resource constraints for the tenant"
+                properties:
+                  cpu:
+                    type: string
+                    pattern: '^\d+m?$'
+                    description: "CPU request/limit in millicores (e.g., 4000m)"
+                  memory:
+                    type: string
+                    pattern: '^\d+(Mi|Gi|Ti)$'
+                    description: "Memory request/limit (e.g., 8Gi)"
+                  storageClass:
+                    type: string
+                    description: "Storage class name for PVCs"
+              network:
+                type: object
+                description: "Network configuration and policies"
+                properties:
+                  allowInternetAccess:
+                    type: boolean
+                    description: "Allow egress to external IPs"
+                  whitelistedServices:
+                    type: array
+                    items:
+                      type: string
+                    description: "Allowed egress destinations (namespace/service format)"
+              allowTierMigration:
+                type: boolean
+                description: "Allow unsafe tier downgrades (requires explicit flag)"
+              suspend:
+                type: boolean
+                description: "Scale tenant to zero for cost savings"
+            required:
+            - tier
+            - owner
+          status:
+            type: object
+            description: TenantStatus defines the observed state of a Tenant
+            properties:
+              state:
+                type: string
+                enum: ["Provisioning", "Ready", "Failed", "Suspended", "Terminating"]
+                description: "Current provisioning state"
+              namespace:
+                type: string
+                description: "Allocated namespace name"
+              apiEndpoint:
+                type: string
+                description: "API endpoint for Gold tier vClusters"
+              adminKubeconfigSecret:
+                type: string
+                description: "Secret containing kubeconfig for Gold tier"
+              provisioningStartTime:
+                type: string
+                format: date-time
+              lastUpdateTime:
+                type: string
+                format: date-time
+              lastError:
+                type: string
+              observedGeneration:
+                type: integer
+    additionalPrinterColumns:
+    - name: Tier
+      type: string
+      jsonPath: .spec.tier
+    - name: State
+      type: string
+      jsonPath: .status.state
+    - name: Namespace
+      type: string
+      jsonPath: .status.namespace
+    - name: Owner
+      type: string
+      jsonPath: .spec.owner
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+    subresources:
+      status: {}

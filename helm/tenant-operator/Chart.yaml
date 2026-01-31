@@ -1,0 +1,25 @@
+apiVersion: v2
+name: tenant-operator
+description: A Kubernetes Operator for Hard Multi-Tenancy in B2B SaaS platforms
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - kubernetes
+  - operator
+  - multi-tenancy
+  - isolation
+  - saas
+
+home: https://github.com/amartyaa/tenant-master
+sources:
+  - https://github.com/amartyaa/tenant-master
+
+maintainers:
+  - name: Amartya
+    email: amartya@example.com
+
+dependencies: []
+
+icon: https://kubernetes.io/images/kubernetes-horizontal-color.png

@@ -1,0 +1,125 @@
+---
+# Gold Tier Example: vCluster Isolation (Hard Multi-Tenancy)
+# Use Case: Enterprise customers, SaaS deployments, strict compliance requirements (PCI-DSS, HIPAA)
+# Features:
+# - Virtual Kubernetes cluster (vCluster) per tenant: complete control plane isolation
+# - Dedicated API server, scheduler, controller manager
+# - Tenant cannot escape their vCluster; all workloads confined to isolated data plane
+# - Network isolation + vCluster kernel separation
+# - Premium resources: 8CPU, 16GB memory minimum
+# - High cost, maximum security and resource guarantees
+# - Suitable for: external SaaS customers, highly sensitive data, regulatory compliance
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: customer-alpha-gold
+  namespace: default
+spec:
+  tier: Gold
+  owner: enterprise-support@acme.corp
+  resources:
+    cpu: 8000m          # 8 CPU cores (dedicated vCluster resources)
+    memory: 16Gi        # 16GB RAM (dedicated vCluster resources)
+    storageClass: premium-ssd
+  network:
+    allowInternetAccess: false     # Gold tier: strict egress control
+    whitelistedServices:
+      - kube-system/coredns        # DNS resolution only
+      - monitoring/prometheus      # Platform-level metrics collection
+  allowTierMigration: false        # Prevent downgrades; upgrade-only
+  suspend: false
+
+---
+# Gold Tier Example #2: Healthcare SaaS Customer (Compliance-heavy)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: healthtech-hipaa-gold
+  namespace: default
+spec:
+  tier: Gold
+  owner: healthcare-account-manager@acme.corp
+  resources:
+    cpu: 12000m         # 12 CPU cores (high availability for patient data)
+    memory: 24Gi        # 24GB RAM (HIPAA data retention)
+    storageClass: premium-ssd-encrypted
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+      - kube-system/coredns
+      - monitoring/audit-logger    # Compliance logging
+  suspend: false
+
+---
+# Gold Tier Example #3: Financial Services (PCI-DSS)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: fintech-pci-gold
+  namespace: default
+spec:
+  tier: Gold
+  owner: financial-compliance@acme.corp
+  resources:
+    cpu: 10000m         # 10 CPU cores
+    memory: 20Gi        # 20GB RAM
+    storageClass: premium-ssd-encrypted
+  network:
+    allowInternetAccess: false     # Strict PCI-DSS egress control
+    whitelistedServices:
+      - kube-system/coredns
+      - monitoring/pci-compliance-audit
+      - logging/encrypted-logs
+  suspend: false
+
+---
+# Gold Tier Example #4: Development/Testing vCluster (pre-production staging)
+# Note: Still on Gold tier for full cluster control; lower resources for cost optimization
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: alpha-staging-vcluster-gold
+  namespace: default
+spec:
+  tier: Gold
+  owner: devops-team@acme.corp
+  resources:
+    cpu: 6000m          # 6 CPU cores (lower than production)
+    memory: 12Gi        # 12GB RAM
+    storageClass: standard
+  network:
+    allowInternetAccess: true      # Allow outbound for downloading dependencies
+    whitelistedServices: []        # Flexible for testing
+  suspend: false
+
+---
+# Gold Tier Example #5: Migration to Hard Multi-Tenancy
+# Customer currently on Silver tier can upgrade to Gold for enhanced isolation
+# (Note: This would be an update to an existing tenant, not a new creation)
+# Example of what the spec update would look like:
+# kubectl patch tenant legacy-customer-gold -p '{"spec":{"tier":"Gold"}}'
+# The operator would:
+# 1. Detect tier change from Silver → Gold
+# 2. Provision new vCluster
+# 3. Provide kubeconfig via Secret
+# 4. Customer migrates workloads to vCluster kubeconfig
+# 5. Original namespace remains (for data migration period)
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: enterprise-customer-upgraded-gold
+  namespace: default
+spec:
+  tier: Gold
+  owner: enterprise-cso@acme.corp
+  resources:
+    cpu: 16000m         # Maximum resources for large workloads
+    memory: 32Gi        # Maximum memory for data-intensive apps
+    storageClass: premium-ssd-encrypted
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+      - kube-system/coredns
+      - monitoring/prometheus
+      - logging/siem-integration
+  suspend: false

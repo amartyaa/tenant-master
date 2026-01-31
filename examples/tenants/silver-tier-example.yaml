@@ -1,0 +1,97 @@
+---
+# Silver Tier Example: Namespace Isolation
+# Use Case: Production services, internal tools, stable microservices
+# Features:
+# - Hard namespace isolation (dedicated namespace per tenant)
+# - NetworkPolicy enforcement: restricted egress to whitelisted services
+# - ResourceQuota enforcement: strict CPU/memory limits
+# - RBAC: tenant admin role within their namespace only
+# - Medium resource allocation: 4CPU, 8GB memory
+# - Production-grade, suitable for business-critical internal services
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: acme-payments-silver
+  namespace: default
+spec:
+  tier: Silver
+  owner: payments-team-lead@acme.corp
+  resources:
+    cpu: 4000m          # 4 CPU cores
+    memory: 8Gi         # 8GB RAM
+    storageClass: premium-ssd
+  network:
+    allowInternetAccess: false     # Silver tier: no outbound internet by default
+    whitelistedServices:
+      - kube-system/coredns        # Allow DNS
+      - default/api-gateway        # Allow API gateway communication
+      - default/postgres           # Allow database access
+      - monitoring/prometheus      # Allow metrics scraping
+  allowTierMigration: false        # Prevent unsafe downgrades to Bronze
+  suspend: false
+
+---
+# Silver Tier Example #2: Managed Kubernetes Service
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: acme-analytics-silver
+  namespace: default
+spec:
+  tier: Silver
+  owner: analytics-team-lead@acme.corp
+  resources:
+    cpu: 8000m          # 8 CPU cores (data processing intensive)
+    memory: 16Gi        # 16GB RAM (large dataset handling)
+    storageClass: premium-ssd
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+      - kube-system/coredns
+      - default/data-warehouse
+      - monitoring/prometheus
+      - logging/elasticsearch      # Allow log aggregation
+  suspend: false
+
+---
+# Silver Tier Example #3: Scheduled Batch Processing
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: nightly-batch-jobs-silver
+  namespace: default
+spec:
+  tier: Silver
+  owner: platform-team@acme.corp
+  resources:
+    cpu: 6000m
+    memory: 12Gi
+    storageClass: standard
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+      - kube-system/coredns
+      - default/postgres
+      - default/elasticsearch
+  suspend: true   # Normally suspended; enabled nightly by CronJob
+
+---
+# Silver Tier Example #4: Monitoring & Observability
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+  name: platform-monitoring-silver
+  namespace: default
+spec:
+  tier: Silver
+  owner: observability-team@acme.corp
+  resources:
+    cpu: 3000m
+    memory: 6Gi
+    storageClass: premium-ssd
+  network:
+    allowInternetAccess: false
+    whitelistedServices:
+      - kube-system/coredns
+      - default/prometheus-targets   # Scrape targets
+  suspend: false

@@ -1,0 +1,148 @@
+# Default values for tenant-operator Helm chart
+
+# Namespace where the operator is deployed
+namespace: tenant-master-system
+
+# Operator deployment configuration
+operator:
+  replicaCount: 1
+  
+  image:
+    repository: amartyaa/tenant-operator
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: "tenant-master"
+  
+  # Service Account
+  serviceAccount:
+    create: true
+    annotations: {}
+    name: "tenant-master"
+  
+  # Pod annotations
+  podAnnotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+  
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    fsGroup: 65532
+  
+  securityContext:
+    capabilities:
+      drop:
+      - ALL
+    readOnlyRootFilesystem: true
+    allowPrivilegeEscalation: false
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+  
+  # Node affinity for scheduling
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  # Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: 8081
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  
+  # Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /readyz
+      port: 8081
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Webhook configuration
+webhooks:
+  enabled: true
+  port: 9443
+  
+  mutating:
+    name: "mtenant.platform.io"
+    failurePolicy: Fail
+  
+  validating:
+    name: "vtenant.platform.io"
+    failurePolicy: Fail
+  
+  service:
+    name: tenant-master-webhook
+    port: 443
+    targetPort: 9443
+
+# CRD configuration
+crds:
+  create: true
+  scope: Cluster
+
+# RBAC configuration
+rbac:
+  create: true
+  rules:
+    - apiGroups: ["platform.io"]
+      resources: ["tenants"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["platform.io"]
+      resources: ["tenants/status"]
+      verbs: ["get", "update", "patch"]
+    - apiGroups: ["platform.io"]
+      resources: ["tenants/finalizers"]
+      verbs: ["update"]
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["serviceaccounts"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["secrets", "configmaps"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["rbac.authorization.k8s.io"]
+      resources: ["roles", "rolebindings"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: ["networkpolicies"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["resourcequotas"]
+      verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+    - apiGroups: [""]
+      resources: ["events"]
+      verbs: ["create", "patch"]
+    - apiGroups: ["apps"]
+      resources: ["statefulsets"]
+      verbs: ["get", "list", "watch"]
+
+# Monitoring/Metrics configuration
+metrics:
+  enabled: true
+  port: 8080
+  path: "/metrics"
+
+# Leader election configuration
+leaderElection:
+  enabled: true
+  namespace: "tenant-master-system"
+
+# Operator log level
+logLevel: "info"
+
+# Number of concurrent tenant reconciliations
+maxConcurrentReconciles: 3
