@@ -1,0 +1,10 @@
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+    name: e2e-test-1769899651
+spec:
+    cpu: 500m
+    memory: 512Mi
+    name: e2e-test-1769899651
+    owner: e2e@local.test
+    tier: Bronze

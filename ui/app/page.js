@@ -1,3 +1,6 @@
+"use client"
+
+import { useState } from 'react'
 import useSWR from 'swr'
 import Link from 'next/link'
 import { formatDistanceToNow } from 'date-fns'
@@ -95,7 +98,7 @@ const TenantCard = ({ tenant }) => (
 )
 
 export default function Home() {
-  const { data: tenants, error, isLoading } = useSWR('/api/v1/tenants', fetcher, {
+  const { data: tenants, error, isLoading } = useSWR('/api/v1/tenants', (url) => fetch(url).then(r => r.json()), {
     refreshInterval: 5000,
   })
 

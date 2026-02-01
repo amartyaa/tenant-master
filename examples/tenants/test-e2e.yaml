@@ -1,0 +1,10 @@
+apiVersion: platform.io/v1alpha1
+kind: Tenant
+metadata:
+    name: test-e2e
+spec:
+    cpu: 500m
+    memory: 512Mi
+    name: test-e2e
+    owner: qa@acme.corp
+    tier: Bronze
